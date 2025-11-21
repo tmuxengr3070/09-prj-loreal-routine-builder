@@ -159,3 +159,99 @@ chatForm.addEventListener("submit", (e) => {
 
   chatWindow.innerHTML = "Connect to the OpenAI API for a response!";
 });
+
+/* Get reference to the Generate Routine button */
+const generateRoutineBtn = document.getElementById("generateRoutine");
+
+/* Handle Generate Routine button click */
+generateRoutineBtn.addEventListener("click", async () => {
+  /* Check if user has selected any products */
+  if (selectedProducts.length === 0) {
+    chatWindow.innerHTML = `
+      <p style="color: #666;">Please select at least one product to generate a routine.</p>
+    `;
+    return;
+  }
+
+  /* Get full product details for each selected product ID */
+  const selectedProductDetails = selectedProducts
+    .map((id) => allProducts.find((product) => product.id === id))
+    .filter((product) => product);
+
+  /* Show loading message while waiting for AI response */
+  chatWindow.innerHTML = `
+    <p style="color: #666;">
+      <i class="fa-solid fa-spinner fa-spin"></i> Generating your personalized routine...
+    </p>
+  `;
+
+  /* Format the product information as a readable string */
+  const productInfo = selectedProductDetails
+    .map(
+      (product) => `
+    - ${product.name} by ${product.brand}
+      Category: ${product.category}
+      Description: ${product.description}
+  `
+    )
+    .join("\n");
+
+  /* Create the messages array for OpenAI API */
+  const messages = [
+    {
+      role: "system",
+      content:
+        "You are a professional beauty and skincare advisor for L'Oréal. Create personalized routines based on the products provided. Be specific about the order of use, timing (morning/evening), and application tips.",
+    },
+    {
+      role: "user",
+      content: `Please create a detailed skincare/beauty routine using these products:\n\n${productInfo}\n\nProvide step-by-step instructions on how and when to use each product for best results.`,
+    },
+  ];
+
+  try {
+    /* Send request to OpenAI API using fetch with async/await */
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        /* Use the API key from secrets.js */
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o",
+        messages: messages,
+        temperature: 0.7,
+        max_tokens: 1000,
+      }),
+    });
+
+    /* Parse the JSON response from OpenAI */
+    const data = await response.json();
+
+    /* Check if we received a valid response from OpenAI */
+    if (data.choices && data.choices[0] && data.choices[0].message) {
+      /* Extract the AI-generated routine from the response */
+      const routine = data.choices[0].message.content;
+
+      /* Display the routine in the chat window */
+      chatWindow.innerHTML = `
+        <div style="line-height: 1.8;">
+          <h3 style="margin-bottom: 15px; font-size: 18px;">Your Personalized Routine</h3>
+          <div style="white-space: pre-wrap;">${routine}</div>
+        </div>
+      `;
+    } else {
+      /* Handle cases where the response format is unexpected */
+      chatWindow.innerHTML = `
+        <p style="color: #d32f2f;">Sorry, I couldn't generate a routine. Please try again.</p>
+      `;
+    }
+  } catch (error) {
+    /* Handle any errors that occur during the API call */
+    console.error("Error calling OpenAI API:", error);
+    chatWindow.innerHTML = `
+      <p style="color: #d32f2f;">An error occurred while generating your routine. Please check your API key and try again.</p>
+    `;
+  }
+});
