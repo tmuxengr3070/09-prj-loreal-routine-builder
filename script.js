@@ -4,10 +4,35 @@ const productsContainer = document.getElementById("productsContainer");
 const chatForm = document.getElementById("chatForm");
 const chatWindow = document.getElementById("chatWindow");
 const selectedProductsList = document.getElementById("selectedProductsList");
+const clearAllBtn = document.getElementById("clearAllBtn");
 
 /* Track selected products */
 let selectedProducts = [];
 let allProducts = [];
+
+/* Load selected products from localStorage when page loads */
+function loadSelectedProductsFromStorage() {
+  const saved = localStorage.getItem("selectedProducts");
+  if (saved) {
+    try {
+      selectedProducts = JSON.parse(saved);
+    } catch (error) {
+      console.error(
+        "Error loading selected products from localStorage:",
+        error
+      );
+      selectedProducts = [];
+    }
+  }
+}
+
+/* Save selected products to localStorage */
+function saveSelectedProductsToStorage() {
+  localStorage.setItem("selectedProducts", JSON.stringify(selectedProducts));
+}
+
+/* Initialize selected products from localStorage */
+loadSelectedProductsFromStorage();
 
 /* Show initial placeholder until user selects a category */
 productsContainer.innerHTML = `
@@ -22,6 +47,10 @@ async function loadProducts() {
   const data = await response.json();
   /* Store all products for later use */
   allProducts = data.products;
+
+  /* Update the selected products display after loading all products */
+  updateSelectedProductsDisplay();
+
   return data.products;
 }
 
@@ -54,8 +83,13 @@ function updateSelectedProductsDisplay() {
     selectedProductsList.innerHTML = `
       <p style="color: #666; font-size: 16px;">No products selected yet. Click on products above to add them.</p>
     `;
+    /* Hide the Clear All button when no products are selected */
+    clearAllBtn.style.display = "none";
     return;
   }
+
+  /* Show the Clear All button when products are selected */
+  clearAllBtn.style.display = "flex";
 
   /* Find the full product details for each selected ID */
   const selectedProductDetails = selectedProducts
@@ -92,6 +126,9 @@ function updateSelectedProductsDisplay() {
 function removeProduct(productId) {
   selectedProducts = selectedProducts.filter((id) => id !== productId);
 
+  /* Save updated selection to localStorage */
+  saveSelectedProductsToStorage();
+
   /* Remove selected class from the product card if visible */
   const card = document.querySelector(`.product-card[data-id="${productId}"]`);
   if (card) {
@@ -101,6 +138,41 @@ function removeProduct(productId) {
   /* Update the display */
   updateSelectedProductsDisplay();
 }
+
+/* Clear all selected products */
+function clearAllProducts() {
+  /* Clear the selected products array */
+  selectedProducts = [];
+
+  /* Clear from localStorage */
+  localStorage.removeItem("selectedProducts");
+
+  /* Remove selected class from all product cards */
+  const allCards = document.querySelectorAll(".product-card.selected");
+  allCards.forEach((card) => {
+    card.classList.remove("selected");
+  });
+
+  /* Update the display */
+  updateSelectedProductsDisplay();
+
+  /* Clear the chat window if it had content */
+  if (chatWindow.innerHTML.trim() !== "") {
+    chatWindow.innerHTML = "";
+  }
+}
+
+/* Add click handler for Clear All button */
+clearAllBtn.addEventListener("click", () => {
+  /* Show confirmation dialog before clearing */
+  const confirmed = confirm(
+    "Are you sure you want to remove all selected products?"
+  );
+
+  if (confirmed) {
+    clearAllProducts();
+  }
+});
 
 /* Add click handlers to product cards for selection */
 function addProductClickHandlers() {
@@ -120,6 +192,9 @@ function addProductClickHandlers() {
         card.classList.add("selected");
       }
 
+      /* Save updated selection to localStorage */
+      saveSelectedProductsToStorage();
+
       /* Update the selected products display */
       updateSelectedProductsDisplay();
     });
@@ -128,6 +203,9 @@ function addProductClickHandlers() {
 
 /* Initialize the selected products display on page load */
 updateSelectedProductsDisplay();
+
+/* Load products on page load to display any saved selections */
+loadProducts();
 
 /* Filter and display products when category changes */
 categoryFilter.addEventListener("change", async (e) => {
@@ -209,9 +287,12 @@ generateRoutineBtn.addEventListener("click", async () => {
     },
   ];
 
+   // Replace with your actual Cloudflare Worker URL
+    const workerUrl = "https://project-loreal.tonymcmo.workers.dev/";
+
   try {
     /* Send request to OpenAI API using fetch with async/await */
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const response = await fetch(workerUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
