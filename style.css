@@ -7,11 +7,11 @@
 
 /* —— body + fonts —— */
 body {
-  font-family: "Royale", Arial, Helvetica, sans-serif;
-  color: #e3a535;
+  font-family: "Montserrat", Arial, Helvetica, sans-serif;
+  color: #333;
   display: flex;
   justify-content: center;
-  background: linear-gradient(135deg, #000000 0%, #1a1a1a 50%, #2d2416 100%);
+  background: #fff;
   min-height: 100vh;
 }
 
