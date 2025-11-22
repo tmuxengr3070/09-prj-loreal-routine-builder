@@ -287,25 +287,28 @@ generateRoutineBtn.addEventListener("click", async () => {
     },
   ];
 
-   // Replace with your actual Cloudflare Worker URL
-    const workerUrl = "https://project-loreal.tonymcmo.workers.dev/";
+  /* Use Cloudflare Worker URL - it handles the API key securely */
+  const workerUrl = "https://project-loreal.tonymcmo.workers.dev/";
 
   try {
-    /* Send request to OpenAI API using fetch with async/await */
+    /* Send request through Cloudflare Worker */
     const response = await fetch(workerUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        /* Use the API key from secrets.js */
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
         model: "gpt-4o",
         messages: messages,
         temperature: 0.7,
-        max_tokens: 1000,
+        max_tokens: 500,
       }),
     });
+
+    /* Check if the response was successful */
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
 
     /* Parse the JSON response from OpenAI */
     const data = await response.json();
