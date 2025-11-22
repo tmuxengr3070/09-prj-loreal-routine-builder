@@ -11,7 +11,7 @@ const searchInput = document.getElementById("searchInput");
 let selectedProducts = [];
 let allProducts = [];
 let currentCategory = "";
-let currentSearchTerm = [];
+let currentSearchTerm = ""; // Fixed: was [] but should be a string
 
 /* Load selected products from localStorage when page loads */
 function loadSelectedProductsFromStorage() {
