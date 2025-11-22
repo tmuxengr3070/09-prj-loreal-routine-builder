@@ -296,6 +296,7 @@ generateRoutineBtn.addEventListener("click", async () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        /* No Authorization header - Worker handles the API key */
       },
       body: JSON.stringify({
         model: "gpt-4o",
@@ -305,13 +306,24 @@ generateRoutineBtn.addEventListener("click", async () => {
       }),
     });
 
+    /* Log the response status for debugging */
+    console.log("Response status:", response.status);
+
     /* Check if the response was successful */
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      /* Get the error details from the response */
+      const errorData = await response.text();
+      console.error("Error response:", errorData);
+      throw new Error(
+        `HTTP error! status: ${response.status}, details: ${errorData}`
+      );
     }
 
     /* Parse the JSON response from OpenAI */
     const data = await response.json();
+
+    /* Log the response for debugging */
+    console.log("OpenAI response:", data);
 
     /* Check if we received a valid response from OpenAI */
     if (data.choices && data.choices[0] && data.choices[0].message) {
@@ -325,17 +337,27 @@ generateRoutineBtn.addEventListener("click", async () => {
           <div style="white-space: pre-wrap;">${routine}</div>
         </div>
       `;
+    } else if (data.error) {
+      /* Handle OpenAI API errors */
+      console.error("OpenAI API error:", data.error);
+      chatWindow.innerHTML = `
+        <p style="color: #d32f2f;">OpenAI API error: ${
+          data.error.message || "Unknown error"
+        }</p>
+      `;
     } else {
       /* Handle cases where the response format is unexpected */
+      console.error("Unexpected response format:", data);
       chatWindow.innerHTML = `
-        <p style="color: #d32f2f;">Sorry, I couldn't generate a routine. Please try again.</p>
+        <p style="color: #d32f2f;">Sorry, I couldn't generate a routine. Unexpected response format.</p>
       `;
     }
   } catch (error) {
     /* Handle any errors that occur during the API call */
     console.error("Error calling OpenAI API:", error);
     chatWindow.innerHTML = `
-      <p style="color: #d32f2f;">An error occurred while generating your routine. Please check your API key and try again.</p>
+      <p style="color: #d32f2f;">An error occurred: ${error.message}</p>
+      <p style="color: #666; font-size: 14px; margin-top: 10px;">Check the browser console for more details.</p>
     `;
   }
 });
