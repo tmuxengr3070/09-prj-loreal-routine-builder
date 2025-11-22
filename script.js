@@ -5,10 +5,13 @@ const chatForm = document.getElementById("chatForm");
 const chatWindow = document.getElementById("chatWindow");
 const selectedProductsList = document.getElementById("selectedProductsList");
 const clearAllBtn = document.getElementById("clearAllBtn");
+const searchInput = document.getElementById("searchInput");
 
-/* Track selected products */
+/* Track selected products and current filters */
 let selectedProducts = [];
 let allProducts = [];
+let currentCategory = "";
+let currentSearchTerm = [];
 
 /* Load selected products from localStorage when page loads */
 function loadSelectedProductsFromStorage() {
@@ -207,17 +210,53 @@ updateSelectedProductsDisplay();
 /* Load products on page load to display any saved selections */
 loadProducts();
 
-/* Filter and display products when category changes */
-categoryFilter.addEventListener("change", async (e) => {
-  const products = await loadProducts();
-  const selectedCategory = e.target.value;
+/* Filter products based on category and search term */
+function filterProducts() {
+  /* Start with all products */
+  let filteredProducts = allProducts;
 
-  /* filter() creates a new array containing only products 
-     where the category matches what the user selected */
-  const filteredProducts = products.filter(
-    (product) => product.category === selectedCategory
-  );
+  /* Apply category filter if a category is selected */
+  if (currentCategory) {
+    filteredProducts = filteredProducts.filter(
+      (product) => product.category === currentCategory
+    );
+  }
 
+  /* Apply search filter if there's a search term */
+  if (currentSearchTerm) {
+    const searchLower = currentSearchTerm.toLowerCase();
+    filteredProducts = filteredProducts.filter((product) => {
+      /* Search in product name, brand, category, and description */
+      return (
+        product.name.toLowerCase().includes(searchLower) ||
+        product.brand.toLowerCase().includes(searchLower) ||
+        product.category.toLowerCase().includes(searchLower) ||
+        product.description.toLowerCase().includes(searchLower)
+      );
+    });
+  }
+
+  /* If no category is selected and no search term, show placeholder */
+  if (!currentCategory && !currentSearchTerm) {
+    productsContainer.innerHTML = `
+      <div class="placeholder-message">
+        Select a category or search for products
+      </div>
+    `;
+    return;
+  }
+
+  /* If no products match the filters, show a message */
+  if (filteredProducts.length === 0) {
+    productsContainer.innerHTML = `
+      <div class="placeholder-message">
+        No products found matching your search
+      </div>
+    `;
+    return;
+  }
+
+  /* Display the filtered products */
   displayProducts(filteredProducts);
 
   /* Restore selected state for any products that were previously selected */
@@ -229,6 +268,34 @@ categoryFilter.addEventListener("change", async (e) => {
       }
     });
   }, 0);
+}
+
+/* Filter and display products when category changes */
+categoryFilter.addEventListener("change", async (e) => {
+  /* Make sure products are loaded */
+  if (allProducts.length === 0) {
+    await loadProducts();
+  }
+
+  /* Update the current category */
+  currentCategory = e.target.value;
+
+  /* Apply all filters */
+  filterProducts();
+});
+
+/* Filter products when user types in search field */
+searchInput.addEventListener("input", async (e) => {
+  /* Make sure products are loaded */
+  if (allProducts.length === 0) {
+    await loadProducts();
+  }
+
+  /* Update the current search term */
+  currentSearchTerm = e.target.value.trim();
+
+  /* Apply all filters */
+  filterProducts();
 });
 
 /* Chat form submission handler - placeholder for OpenAI integration */
