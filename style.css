@@ -30,7 +30,8 @@ body {
 .logo {
   width: 250px;
   margin-bottom: 15px;
-  filter: brightness(0) saturate(100%) invert(94%) sepia(5%) saturate(318%) hue-rotate(8deg) brightness(98%) contrast(92%);
+  filter: brightness(0) saturate(100%) invert(94%) sepia(5%) saturate(318%)
+    hue-rotate(8deg) brightness(98%) contrast(92%);
 }
 
 .site-title {
